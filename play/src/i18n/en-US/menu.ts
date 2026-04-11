@@ -153,6 +153,7 @@ const menu: BaseTranslation = {
         help: "Help & tutorials",
         contextualActions: "Contextual actions",
         shortcuts: "Shortcuts",
+        aiAgents: "AI Agents",
     },
     shortcuts: {
         title: "Keyboard Shortcuts",
@@ -178,6 +179,23 @@ const menu: BaseTranslation = {
         openSayPopup: "Open Say Popup",
         openThinkPopup: "Open Think Popup",
         walkMyDesk: "Walk to My Desk",
+    },
+    aiAgents: {
+        title: "AI Agents",
+        enable: "Enable AI Agents",
+        addAgent: "Add Agent",
+        name: "Name",
+        style: "Communication Style",
+        styles: {
+            friendly: "Friendly",
+            professional: "Professional",
+            casual: "Casual",
+        },
+        tasks: "Tasks",
+        selectAgent: "Select an Agent",
+        typeMessage: "Type a message...",
+        chatEmpty: "Start a conversation...",
+        noAgents: "No AI agents available",
     },
 };
 

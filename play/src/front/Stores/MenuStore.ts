@@ -26,6 +26,7 @@ import { gameSceneStore } from "./GameSceneStore";
 import { modalIframeStore, modalVisibilityStore, showModalGlobalComminucationVisibilityStore } from "./ModalStore";
 import { getAdditionalMenuItemStore } from "./AdditionalItemsMenuStore";
 import { personalAreaDataStore } from "./PersonalDeskStore";
+import { aiAgentsVisibleStore } from "./AIAgentStore";
 
 export const menuIconVisiblilityStore = writable(false);
 export const menuVisiblilityStore = writable(false);
@@ -68,6 +69,7 @@ export enum SubMenusInterface {
     chat = "chat",
     shortcuts = "shortcuts",
     help = "help",
+    aiAgents = "aiAgents",
 }
 
 export type MenuKeys = keyof Translation["menu"]["sub"];
@@ -154,6 +156,11 @@ function createSubMenusStore() {
             type: "translated",
             key: SubMenusInterface.help,
             visible: alwaysVisible,
+        },
+        {
+            type: "translated",
+            key: SubMenusInterface.aiAgents,
+            visible: aiAgentsVisibleStore,
         },
     ]);
     const { subscribe, update } = store;

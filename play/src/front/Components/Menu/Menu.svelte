@@ -27,6 +27,7 @@
     import ChatSubMenu from "./ChatSubMenu.svelte";
     import ShortcutSubMenu from "./ShortcutSubMenu.svelte";
     import HelpSubMenu from "./HelpSubMenu.svelte";
+    import AIAgentsSubMenu from "./AIAgentsSubMenu.svelte";
 
     let activeSubMenu: MenuItem = $subMenusStore[$activeSubMenuStore];
     let activeComponent: ComponentType = ProfileSubMenu;
@@ -102,6 +103,9 @@
                     break;
                 case SubMenusInterface.help:
                     activeComponent = HelpSubMenu;
+                    break;
+                case SubMenusInterface.aiAgents:
+                    activeComponent = AIAgentsSubMenu;
                     break;
             }
         } else {
