@@ -1,0 +1,7 @@
+# Use with: docker compose -f docker-compose.yaml -f docker-compose-no-oidc.yaml -f docker-compose.without-oidc-image.yaml up
+# Keeps oidc-server-mock out of the default profile so GHCR is not required (see docker-compose-no-oidc.yaml).
+# To run the real mock: docker compose --profile oidc -f docker-compose.yaml -f docker-compose-no-oidc.yaml up
+services:
+  oidc-server-mock:
+    profiles:
+      - oidc

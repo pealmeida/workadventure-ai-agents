@@ -1,4 +1,3 @@
-import fs from "fs";
 import type { Application } from "express";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -31,6 +30,7 @@ import { WokaService } from "./services/WokaService";
 import { UserController } from "./controllers/UserController";
 import { MatrixRoomAreaController } from "./controllers/MatrixRoomAreaController";
 import { LocalScriptController } from "./controllers/LocalScriptController";
+import { resolvePlayStaticRoot } from "./services/resolvePlayStaticPath";
 
 class App {
     private readonly app: Application;
@@ -70,16 +70,7 @@ class App {
 
         //this.app.set_error_handler(globalErrorHandler);
 
-        let path: string;
-        if (fs.existsSync("dist/public")) {
-            // In prod mode
-            path = "dist/public";
-        } else if (fs.existsSync("public")) {
-            // In dev mode
-            path = "public";
-        } else {
-            throw new Error("Could not find public folder");
-        }
+        const path = resolvePlayStaticRoot();
 
         // Socket controllers
         new IoSocketController(this.websocketApp);

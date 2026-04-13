@@ -13,7 +13,7 @@
 
     import { analyticsClient } from "../../Administration/AnalyticsClient";
     import { localUserStore } from "../../Connection/LocalUserStore";
-    import { videoQualityStore } from "../../Stores/MediaStore";
+    import { videoQualityStore, requestedCameraState, requestedMicrophoneState, cameraDisabledStore, microphoneDisabledStore } from "../../Stores/MediaStore";
     import { screenShareQualityStore } from "../../Stores/ScreenSharingStore";
     import { volumeProximityDiscussionStore } from "../../Stores/PeerStore";
     import { bandwidthConstrainedPreferenceStore } from "../../Stores/BandwidthConstrainedPreferenceStore";
@@ -58,6 +58,8 @@
 
     let valueBubbleSound = localUserStore.getBubbleSound();
     let videoQualityStats = localUserStore.getDisplayVideoQualityStats();
+    let valueDisableCamera = localUserStore.getDisableCamera();
+    let valueDisableMicrophone = localUserStore.getDisableMicrophone();
 
     async function updateLocale() {
         await setCurrentLocale(valueLocale as Locales);
@@ -217,6 +219,26 @@
     function changeVideoQualityStats() {
         localUserStore.setDisplayVideoQualityStats(videoQualityStats);
         displayVideoQualityStore.set(videoQualityStats);
+    }
+
+    function changeDisableCamera() {
+        localUserStore.setDisableCamera(valueDisableCamera);
+        cameraDisabledStore.set(valueDisableCamera);
+        if (valueDisableCamera) {
+            requestedCameraState.disableWebcam();
+        } else {
+            requestedCameraState.enableWebcam();
+        }
+    }
+
+    function changeDisableMicrophone() {
+        localUserStore.setDisableMicrophone(valueDisableMicrophone);
+        microphoneDisabledStore.set(valueDisableMicrophone);
+        if (valueDisableMicrophone) {
+            requestedMicrophoneState.disableMicrophone();
+        } else {
+            requestedMicrophoneState.enableMicrophone();
+        }
     }
 
     function getBubbleSoundUrl(bubbleSound: string): string {
@@ -456,6 +478,35 @@
                     </option>
                 {/each}
             </select>
+        </div>
+    </section>
+    <section class="flex flex-col p-0 first:pt-0 pt-8 m-0">
+        <div class="tooltip">
+            <div class="group bg-contrast font-bold text-lg p-4 flex items-center relative">
+                <div class="me-4 opacity-50"><IconCameraUp /></div>
+                <div class="grow">
+                    <div>{$LL.menu.settings.mediaDisable.title()}</div>
+                    <div class="text-sm italic text-white/50">{$LL.menu.settings.mediaDisable.explanation()}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex cursor-pointer items-center relative m-4">
+            <InputSwitch
+                id="disable-camera-toggle"
+                bind:value={valueDisableCamera}
+                onChange={changeDisableCamera}
+                label={$LL.menu.settings.mediaDisable.disableCamera()}
+            />
+        </div>
+
+        <div class="flex cursor-pointer items-center relative m-4">
+            <InputSwitch
+                id="disable-microphone-toggle"
+                bind:value={valueDisableMicrophone}
+                onChange={changeDisableMicrophone}
+                label={$LL.menu.settings.mediaDisable.disableMicrophone()}
+            />
         </div>
     </section>
     <section class="flex flex-col p-0 first:pt-0 pt-8 m-0">

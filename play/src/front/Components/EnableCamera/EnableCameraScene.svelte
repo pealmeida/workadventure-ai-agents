@@ -126,13 +126,20 @@
     });
 
     onMount(() => {
-        //init the component to enable webcam and microphone
         batchGetUserMediaStore.startBatch();
         myCameraStore.set(true);
         myMicrophoneStore.set(true);
-        requestedCameraState.enableWebcam();
+        if (!localUserStore.getDisableCamera()) {
+            requestedCameraState.enableWebcam();
+        } else {
+            requestedCameraState.disableWebcam();
+        }
 
-        requestedMicrophoneState.enableMicrophone();
+        if (!localUserStore.getDisableMicrophone()) {
+            requestedMicrophoneState.enableMicrophone();
+        } else {
+            requestedMicrophoneState.disableMicrophone();
+        }
 
         batchGetUserMediaStore.commitChanges();
         sound.load();

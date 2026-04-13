@@ -160,7 +160,7 @@ function createSubMenusStore() {
         {
             type: "translated",
             key: SubMenusInterface.aiAgents,
-            visible: aiAgentsVisibleStore,
+            visible: alwaysVisible,
         },
     ]);
     const { subscribe, update } = store;

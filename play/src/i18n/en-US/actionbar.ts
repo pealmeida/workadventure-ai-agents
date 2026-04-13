@@ -94,6 +94,10 @@ const actionbar: BaseTranslation = {
             title: "Display user's list",
             desc: "See who's there, access their business card, send them a message, or walk up to them with one click !",
         },
+        agents: {
+            title: "AI Agents",
+            desc: "View and chat with active AI agents, manage their tasks and settings.",
+        },
         emoji: {
             title: "Display an emoji",
             desc: "Express how you feel with just one click using emoji reactions. Just tap and go!",

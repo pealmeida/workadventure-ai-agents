@@ -32,6 +32,10 @@ class MatrixProvider {
     private roomAreaFolderID: string | undefined;
 
     constructor() {
+        if (!MATRIX_API_URI) {
+            return;
+        }
+
         this.overrideRateLimitForAdminAccount().catch((error) => {
             console.error("Failed to override admin account ratelimit:", error);
         });

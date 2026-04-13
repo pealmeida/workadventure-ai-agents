@@ -101,6 +101,9 @@ export const requestedCameraState = createRequestedCameraState();
 export const requestedMicrophoneState = createRequestedMicrophoneState();
 export const enableCameraSceneVisibilityStore = createEnableCameraSceneVisibilityStore();
 
+export const cameraDisabledStore = writable(localUserStore.getDisableCamera());
+export const microphoneDisabledStore = writable(localUserStore.getDisableMicrophone());
+
 /**
  * A store that is true when the megaphone screen is displayed.
  */
@@ -473,7 +476,8 @@ export const mediaStreamConstraintsStore = derived(
             isInExternalService ||
             shouldDisableMicrophoneForPrivacy ||
             isEnergySaving ||
-            isUnavailableStatus
+            isUnavailableStatus ||
+            localUserStore.getDisableMicrophone()
         ) {
             currentAudioConstraint = false;
         }
@@ -486,7 +490,8 @@ export const mediaStreamConstraintsStore = derived(
                 isInExternalService ||
                 shouldDisableCameraForPrivacy ||
                 isEnergySaving ||
-                isUnavailableStatus
+                isUnavailableStatus ||
+                localUserStore.getDisableCamera()
             ) {
                 currentVideoConstraint = false;
             }

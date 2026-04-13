@@ -4,6 +4,7 @@ import { windowSize } from "../Stores/CoWebsiteStore";
 import { localUserStore } from "../Connection/LocalUserStore";
 import { mapEditorSideBarWidthStore } from "../Components/MapEditor/MapEditorSideBarWidthStore";
 import { mapEditorModeStore } from "../Stores/MapEditorStore";
+import { agentsSidebarVisibleStore, agentsSidebarWidthStore } from "../Stores/AIAgentStore";
 
 export const chatSidebarWidthStore = writable(localUserStore.getChatSideBarWidth());
 
@@ -14,14 +15,15 @@ chatSidebarWidthStore.subscribe((value) => {
 });
 
 export const hideActionBarStoreBecauseOfChatBar = derived(
-    [chatVisibilityStore, chatSidebarWidthStore, windowSize, mapEditorSideBarWidthStore, mapEditorModeStore],
-    ([$chatVisibilityStore, $chatSidebarWidthStore, $windowSize, $mapEditorWidthStore, $mapEditorModeStore]) => {
-        if (!$chatVisibilityStore && !$mapEditorModeStore) {
+    [chatVisibilityStore, chatSidebarWidthStore, agentsSidebarVisibleStore, agentsSidebarWidthStore, windowSize, mapEditorSideBarWidthStore, mapEditorModeStore],
+    ([$chatVisibilityStore, $chatSidebarWidthStore, $agentsSidebarVisibleStore, $agentsSidebarWidthStore, $windowSize, $mapEditorWidthStore, $mapEditorModeStore]) => {
+        if (!$chatVisibilityStore && !$agentsSidebarVisibleStore && !$mapEditorModeStore) {
             return false;
         }
         return (
             $windowSize.width -
                 ($chatVisibilityStore ? $chatSidebarWidthStore : 0) -
+                ($agentsSidebarVisibleStore ? $agentsSidebarWidthStore : 0) -
                 ($mapEditorModeStore ? $mapEditorWidthStore : 0) <
             285
         );

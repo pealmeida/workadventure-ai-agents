@@ -78,6 +78,12 @@ function createPlayersStore() {
             });
             return newUserId;
         },
+        removeFacticePlayer(userId: number): void {
+            update((users) => {
+                users.delete(userId);
+                return users;
+            });
+        },
     };
 }
 

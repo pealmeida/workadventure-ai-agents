@@ -16,6 +16,7 @@ import { validateQuery } from "../services/QueryValidator";
 import { VerifyDomainService } from "../services/verifyDomain/VerifyDomainService";
 import { matrixProvider } from "../services/MatrixProvider";
 import { BaseHttpController } from "./BaseHttpController";
+import { resolvePlayHtmlTemplate } from "../services/resolvePlayStaticPath";
 
 const debug = Debug("pusher:requests");
 
@@ -25,32 +26,14 @@ export class AuthenticateController extends BaseHttpController {
     constructor(app: Application) {
         super(app);
 
-        let redirectToMatrixPath: string;
-        if (fs.existsSync("dist/public/redirectToMatrix.html")) {
-            // In prod mode
-            redirectToMatrixPath = "dist/public/redirectToMatrix.html";
-        } else if (fs.existsSync("redirectToMatrix.html")) {
-            // In dev mode
-            redirectToMatrixPath = "redirectToMatrix.html";
-        } else {
-            throw new Error("Could not find redirectToMatrix.html file");
-        }
+        const redirectToMatrixPath = resolvePlayHtmlTemplate("redirectToMatrix.html");
 
         this.redirectToMatrixFile = fs.readFileSync(redirectToMatrixPath, "utf8");
 
         // Pre-parse the file for speed (and validation)
         Mustache.parse(this.redirectToMatrixFile);
 
-        let redirectToPlayPath: string;
-        if (fs.existsSync("dist/public/redirectToPlay.html")) {
-            // In prod mode
-            redirectToPlayPath = "dist/public/redirectToPlay.html";
-        } else if (fs.existsSync("redirectToPlay.html")) {
-            // In dev mode
-            redirectToPlayPath = "redirectToPlay.html";
-        } else {
-            throw new Error("Could not find redirectToPlay.html file");
-        }
+        const redirectToPlayPath = resolvePlayHtmlTemplate("redirectToPlay.html");
 
         this.redirectToPlayFile = fs.readFileSync(redirectToPlayPath, "utf8");
 

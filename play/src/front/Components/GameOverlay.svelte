@@ -41,6 +41,7 @@
     import WokaScene from "./Woka/WokaScene.svelte";
     import Onboarding from "./Onboarding/Onboarding.svelte";
     import PwaInstallScreen from "./PwaInstall/PwaInstallScreen.svelte";
+    import AIAgentSidebar from "./Chat/AIAgentSidebar.svelte";
 
     export let game: Game;
 
@@ -104,6 +105,7 @@
     {/if}
     {#key $forceRefreshChatStore}
         <ChatSidebar />
+        <AIAgentSidebar />
         {#if $mapEditorModeStore}
             <MapEditor />
         {/if}

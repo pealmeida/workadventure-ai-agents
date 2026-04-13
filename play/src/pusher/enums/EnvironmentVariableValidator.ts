@@ -436,10 +436,26 @@ export const EnvironmentVariables = z.object({
     GOOGLE_DRIVE_PICKER_CLIENT_ID: z.string().optional().describe("Google OAuth2 client ID for Drive Picker"),
     GOOGLE_DRIVE_PICKER_API_KEY: z.string().optional().describe("Google API key for Drive Picker"),
     GOOGLE_DRIVE_PICKER_APP_ID: z.string().optional().describe("Google application ID for Drive Picker"),
-    MATRIX_API_URI: z.string().optional().describe("Matrix homeserver API URI (internal)"),
-    MATRIX_PUBLIC_URI: z.string().optional().describe("Matrix homeserver public URI"),
-    MATRIX_ADMIN_USER: z.string().optional().describe("Matrix administrator username"),
-    MATRIX_ADMIN_PASSWORD: z.string().optional().describe("Matrix administrator password"),
+    MATRIX_API_URI: z
+        .string()
+        .optional()
+        .transform(emptyStringToUndefined)
+        .describe("Matrix homeserver API URI (internal)"),
+    MATRIX_PUBLIC_URI: z
+        .string()
+        .optional()
+        .transform(emptyStringToUndefined)
+        .describe("Matrix homeserver public URI"),
+    MATRIX_ADMIN_USER: z
+        .string()
+        .optional()
+        .transform(emptyStringToUndefined)
+        .describe("Matrix administrator username"),
+    MATRIX_ADMIN_PASSWORD: z
+        .string()
+        .optional()
+        .transform(emptyStringToUndefined)
+        .describe("Matrix administrator password"),
     MATRIX_DOMAIN: z.string().optional().describe("Matrix server domain"),
     EMBEDLY_KEY: z.string().optional().describe("Embedly API key for rich link previews"),
     GRPC_MAX_MESSAGE_SIZE: PositiveIntAsString.optional()

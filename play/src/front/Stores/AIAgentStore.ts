@@ -1,15 +1,38 @@
 import { writable, derived, get } from "svelte/store";
-import type { Writable } from "svelte/store";
+
 import type { TodoTaskInterface } from "@workadventure/shared-utils";
+import { AIAgentSpawner } from "../Phaser/Game/AIAgentSpawner";
 import { todoListsStore } from "./TodoListStore";
 import { playersStore } from "./PlayersStore";
-import { AIAgentSpawner } from "../Phaser/Game/AIAgentSpawner";
+import { localUserStore } from "../Connection/LocalUserStore";
+
+export const INITIAL_AGENTS_SIDEBAR_WIDTH = 335;
+
+export type AgenticFramework = "openclaw" | "langchain" | "hermes" | "crewai";
+
+export const AGENTIC_FRAMEWORKS: AgenticFramework[] = ["openclaw", "langchain", "hermes", "crewai"];
+
+export type FrameworkConnectionStatus = "connected" | "disconnected" | "connecting" | "error";
+
+export interface FrameworkConnection {
+    framework: AgenticFramework;
+    status: FrameworkConnectionStatus;
+    endpoint?: string;
+    version?: string;
+    lastPing?: Date;
+}
 
 export interface AIAgentConfig {
     id: string;
     name: string;
     enabled: boolean;
     responseStyle: "friendly" | "professional" | "casual";
+    framework: AgenticFramework;
+    provider?: string;
+    model?: string;
+    skills: string[];
+    mcpTools: string[];
+    harness?: string;
     tasks: AIAgentTask[];
     userId?: number;
 }
@@ -24,7 +47,7 @@ export interface AIAgentTask {
 
 function createAIAgentStore() {
     const agents = new Map<string, AIAgentConfig>();
-    const { subscribe, set, update } = writable<Map<string, AIAgentConfig>>(agents);
+    const { subscribe, update } = writable<Map<string, AIAgentConfig>>(agents);
 
     return {
         subscribe,
@@ -65,7 +88,7 @@ function createAIAgentStore() {
                 if (agent) {
                     const taskIndex = agent.tasks.findIndex((t) => t.id === taskId);
                     if (taskIndex !== -1) {
-                        agent.tasks[tIndex] = { ...agent.tasks[tIndex], ...updates };
+                        agent.tasks[taskIndex] = { ...agent.tasks[taskIndex], ...updates };
                         a.set(agentId, agent);
                     }
                 }
@@ -95,7 +118,65 @@ export const aiAgentsStore = createAIAgentStore();
 
 export const aiAgentsEnabledStore = writable(false);
 
+export const aiAgentFrameworkStore = writable<AgenticFramework>(
+    localUserStore.getAIAgentFramework()
+);
+
+// eslint-disable-next-line svelte/no-ignored-unsubscribe
+aiAgentFrameworkStore.subscribe((value) => {
+    localUserStore.setAIAgentFramework(value);
+});
+
+export const frameworkConnectionsStore = writable<Map<AgenticFramework, FrameworkConnection>>(
+    new Map(AGENTIC_FRAMEWORKS.map((fw) => [
+        fw,
+        { framework: fw, status: "disconnected" as FrameworkConnectionStatus },
+    ]))
+);
+
+export function updateFrameworkConnection(
+    framework: AgenticFramework,
+    updates: Partial<FrameworkConnection>
+): void {
+    frameworkConnectionsStore.update((map) => {
+        const existing = map.get(framework);
+        if (existing) {
+            map.set(framework, { ...existing, ...updates });
+        }
+        return map;
+    });
+}
+
+export async function connectFramework(framework: AgenticFramework): Promise<boolean> {
+    updateFrameworkConnection(framework, { status: "connecting" });
+    await new Promise<void>((resolve) => { setTimeout(resolve, 800 + Math.random() * 600); });
+    const success = Math.random() > 0.15;
+    if (success) {
+        updateFrameworkConnection(framework, {
+            status: "connected",
+            version: "1.0.0",
+            lastPing: new Date(),
+        });
+    } else {
+        updateFrameworkConnection(framework, { status: "error" });
+    }
+    return success;
+}
+
+export function disconnectFramework(framework: AgenticFramework): void {
+    updateFrameworkConnection(framework, { status: "disconnected", version: undefined, lastPing: undefined });
+}
+
 export const activeChatAgentStore = writable<string | null>(null);
+
+export const agentsSidebarVisibleStore = writable(false);
+
+export const agentsSidebarWidthStore = writable(localUserStore.getAgentsSideBarWidth());
+
+// eslint-disable-next-line svelte/no-ignored-unsubscribe
+agentsSidebarWidthStore.subscribe((value) => {
+    localUserStore.setAgentsSideBarWidth(value);
+});
 
 export interface AIAgentMessage {
     id: string;
@@ -107,7 +188,7 @@ export interface AIAgentMessage {
 
 function createChatStore() {
     const messages = new Map<string, AIAgentMessage[]>();
-    const { subscribe, set, update } = writable<Map<string, AIAgentMessage[]>>(messages);
+    const { subscribe, update } = writable<Map<string, AIAgentMessage[]>>(messages);
 
     return {
         subscribe,
@@ -191,13 +272,140 @@ export const aiAgentsVisibleStore = derived(
     }
 );
 
-export function createDefaultAgent(name: string = "Assistant"): AIAgentConfig {
+const FRAMEWORK_DEFAULT_AGENTS: Record<
+    AgenticFramework,
+    {
+        name: string;
+        provider: string;
+        model: string;
+        skills: string[];
+        mcpTools: string[];
+        harness: string;
+        tasks: { title: string; description: string }[];
+    }[]
+> = {
+    openclaw: [
+        {
+            name: "Claw Scout",
+            provider: "OpenAI",
+            model: "gpt-4o",
+            skills: ["map-exploration", "reasoning", "anomaly-detection"],
+            mcpTools: ["workadventure-map-reader", "workadventure-zone-watcher"],
+            harness: "openclaw-autonomous",
+            tasks: [
+                { title: "Patrol the map", description: "Autonomously explore and report map activity" },
+                { title: "Claw response", description: "Respond to user queries using OpenClaw reasoning" },
+            ],
+        },
+        {
+            name: "Claw Sentinel",
+            provider: "OpenAI",
+            model: "gpt-4o-mini",
+            skills: ["monitoring", "summarization", "alerting"],
+            mcpTools: ["workadventure-zone-watcher", "workadventure-event-bus"],
+            harness: "openclaw-reactive",
+            tasks: [
+                { title: "Monitor zone events", description: "Watch for zone enter/exit triggers" },
+                { title: "Summarize activity", description: "Provide periodic summaries of world events" },
+            ],
+        },
+    ],
+    langchain: [
+        {
+            name: "Chain Router",
+            provider: "Anthropic",
+            model: "claude-sonnet-4-20250514",
+            skills: ["query-routing", "chain-orchestration", "memory-recall"],
+            mcpTools: ["langchain-retriever", "workadventure-chat-history"],
+            harness: "langgraph-stateful",
+            tasks: [
+                { title: "Route user queries", description: "Classify and dispatch queries via LangChain chains" },
+                { title: "Memory recall", description: "Retrieve conversation context from shared memory" },
+            ],
+        },
+        {
+            name: "Chain Worker",
+            provider: "Anthropic",
+            model: "claude-sonnet-4-20250514",
+            skills: ["tool-execution", "streaming", "code-generation"],
+            mcpTools: ["langchain-tool-executor", "workadventure-api-client"],
+            harness: "langgraph-tool-node",
+            tasks: [
+                { title: "Execute tool calls", description: "Run LangChain tools on behalf of users" },
+                { title: "Stream responses", description: "Deliver streaming LLM responses to chat" },
+            ],
+        },
+    ],
+    hermes: [
+        {
+            name: "Hermes Guide",
+            provider: "Google",
+            model: "gemini-2.5-pro",
+            skills: ["navigation", "context-synthesis", "spatial-awareness"],
+            mcpTools: ["hermes-room-index", "workadventure-pathfinder"],
+            harness: "hermes-reactive",
+            tasks: [
+                { title: "Navigate spaces", description: "Guide users between rooms and spaces" },
+                { title: "Context synthesis", description: "Synthesize multi-agent outputs into coherent replies" },
+            ],
+        },
+        {
+            name: "Hermes Messenger",
+            provider: "Google",
+            model: "gemini-2.5-flash",
+            skills: ["message-relay", "broadcasting", "notification"],
+            mcpTools: ["hermes-pubsub", "workadventure-event-bus"],
+            harness: "hermes-pubsub",
+            tasks: [
+                { title: "Relay messages", description: "Forward messages between agents and users" },
+                { title: "Broadcast alerts", description: "Send system-wide notifications" },
+            ],
+        },
+    ],
+    crewai: [
+        {
+            name: "Crew Lead",
+            provider: "OpenAI",
+            model: "gpt-4o",
+            skills: ["delegation", "aggregation", "planning"],
+            mcpTools: ["crewai-task-manager", "workadventure-api-client"],
+            harness: "crewai-sequential",
+            tasks: [
+                { title: "Delegate tasks", description: "Assign sub-tasks to crew members" },
+                { title: "Aggregate results", description: "Collect and merge crew outputs" },
+            ],
+        },
+        {
+            name: "Crew Researcher",
+            provider: "OpenAI",
+            model: "gpt-4o-mini",
+            skills: ["research", "report-writing", "data-extraction"],
+            mcpTools: ["crewai-knowledge-base", "workadventure-map-reader"],
+            harness: "crewai-researcher",
+            tasks: [
+                { title: "Gather information", description: "Research topics using available tools" },
+                { title: "Draft reports", description: "Produce structured reports from findings" },
+            ],
+        },
+    ],
+};
+
+export function createDefaultAgent(
+    name: string = "Assistant",
+    framework: AgenticFramework = "openclaw"
+): AIAgentConfig {
     const id = `agent-${Date.now()}`;
     return {
         id,
         name,
         enabled: true,
         responseStyle: "friendly",
+        framework,
+        provider: "OpenAI",
+        model: "gpt-4o",
+        skills: [],
+        mcpTools: [],
+        harness: "default",
         tasks: [
             {
                 id: `${id}-task-1`,
@@ -215,13 +423,37 @@ export function createDefaultAgent(name: string = "Assistant"): AIAgentConfig {
     };
 }
 
+export function createFrameworkDefaults(framework: AgenticFramework): AIAgentConfig[] {
+    const definitions = FRAMEWORK_DEFAULT_AGENTS[framework];
+    return definitions.map((def, i) => {
+        const id = `agent-${framework}-${Date.now()}-${i}`;
+        return {
+            id,
+            name: def.name,
+            enabled: true,
+            responseStyle: "friendly" as const,
+            framework,
+            provider: def.provider,
+            model: def.model,
+            skills: def.skills,
+            mcpTools: def.mcpTools,
+            harness: def.harness,
+            tasks: def.tasks.map((t, j) => ({
+                id: `${id}-task-${j}`,
+                title: t.title,
+                description: t.description,
+                status: "notStarted" as const,
+            })),
+        };
+    });
+}
+
 export function registerAIAgent(agent: AIAgentConfig): void {
     aiAgentsStore.addAgent(agent);
 
     if (agent.enabled) {
         const userId = playersStore.addFacticePlayer(agent.name);
         aiAgentsStore.updateAgent(agent.id, { userId });
-        AIAgentSpawner.spawnAgent(agent);
     }
 }
 
@@ -229,7 +461,13 @@ export function unregisterAIAgent(agentId: string): void {
     const agent = aiAgentsStore.getAgent(agentId);
     if (agent) {
         AIAgentSpawner.removeAgent(agentId);
+        if (agent.userId !== undefined) {
+            playersStore.removeFacticePlayer(agent.userId);
+        }
         aiAgentsStore.removeAgent(agentId);
+        if (get(activeChatAgentStore) === agentId) {
+            activeChatAgentStore.set(null);
+        }
     }
 }
 

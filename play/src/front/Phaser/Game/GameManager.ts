@@ -186,15 +186,20 @@ export class GameManager {
             return SelectCompanionSceneName;
         } else if (
             (preferredVideoInputDeviceId === undefined || preferredAudioInputDeviceId === undefined) &&
-            !this.startRoom.skipCameraPage
+            !this.startRoom.skipCameraPage &&
+            !(localUserStore.getDisableCamera() && localUserStore.getDisableMicrophone())
         ) {
             return EnableCameraSceneName;
         } else {
-            if (preferredVideoInputDeviceId !== "") {
+            if (localUserStore.getDisableCamera()) {
+                requestedCameraState.disableWebcam();
+            } else if (preferredVideoInputDeviceId !== "") {
                 requestedCameraDeviceIdStore.set(preferredVideoInputDeviceId);
             }
 
-            if (preferredAudioInputDeviceId !== "") {
+            if (localUserStore.getDisableMicrophone()) {
+                requestedMicrophoneState.disableMicrophone();
+            } else if (preferredAudioInputDeviceId !== "") {
                 requestedMicrophoneDeviceIdStore.set(preferredAudioInputDeviceId);
             }
             this.activeMenuSceneAndHelpCameraSettings();

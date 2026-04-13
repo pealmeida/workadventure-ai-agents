@@ -1,52 +1,82 @@
-import { get } from "svelte/store";
-import { RemotePlayer } from "../Entity/RemotePlayer";
-import { lazyLoadPlayerCharacterTextures } from "../Entity/PlayerTextures";
 import { PositionMessage_Direction } from "@workadventure/messages";
+import { RemotePlayer, RemotePlayerEvent } from "../Entity/RemotePlayer";
+import { lazyLoadPlayerCharacterTextures } from "../Entity/PlayerTexturesLoadingManager";
+import type { WokaTextureDescriptionInterface } from "../Entity/PlayerTextures";
 import type { GameScene } from "./GameScene";
-import type { AIAgentConfig } from "../../Stores/AIAgentStore";
-import { gameSceneStore } from "../../Stores/GameSceneStore";
 
-const AGENT_TEXTURES = [
+import type { AIAgentConfig } from "../../Stores/AIAgentStore";
+import { activeChatAgentStore } from "../../Stores/AIAgentStore";
+
+const AGENT_TEXTURES: WokaTextureDescriptionInterface[] = [
     {
-        name: "wa-agent",
-        extension: ".png",
-        url: "/resources/characters/basecharacter.png",
-        credits: undefined as string | undefined,
-        tilesetJson: { columns: 8, tilecount: 64, tilesize: 32 } as never,
+        id: "wa-agent",
+        url: "resources/characters/pipoya/Cat 01-1.png",
     },
 ];
 
 const DEFAULT_DIRECTION = PositionMessage_Direction.DOWN;
-const DEFAULT_X = 10;
-const DEFAULT_Y = 10;
+const FALLBACK_X = 300;
+const FALLBACK_Y = 300;
 
-let agentInstances = new Map<string, RemotePlayer>();
+const agentInstances = new Map<string, RemotePlayer>();
+
+type RemotePlayerWithAiHandler = RemotePlayer & { _aiAgentClickHandler?: () => void };
+
+function bindAgentClick(player: RemotePlayer, agentId: string): void {
+    const pl = player as RemotePlayerWithAiHandler;
+    if (pl._aiAgentClickHandler) {
+        player.off(RemotePlayerEvent.Clicked, pl._aiAgentClickHandler);
+    }
+    pl._aiAgentClickHandler = () => {
+        activeChatAgentStore.set(agentId);
+    };
+    player.on(RemotePlayerEvent.Clicked, pl._aiAgentClickHandler);
+}
+
+function computeSpawnPosition(scene: GameScene, slotIndex: number): { x: number; y: number } {
+    const tile = scene.getGameMapFrontWrapper().getTileDimensions();
+    const step = Math.max(tile.width, tile.height) * 2;
+    let baseX = FALLBACK_X;
+    let baseY = FALLBACK_Y;
+    if (scene.CurrentPlayer) {
+        baseX = scene.CurrentPlayer.x;
+        baseY = scene.CurrentPlayer.y;
+    }
+    return {
+        x: baseX + step * (slotIndex + 1),
+        y: baseY,
+    };
+}
 
 export class AIAgentSpawner {
-    public static spawnAgent(agent: AIAgentConfig): RemotePlayer | null {
-        const gameScene = get(gameSceneStore);
-        if (!gameScene) {
-            console.warn("No game scene available for spawning AI agent");
-            return null;
-        }
+    public static getSpawnedAgentIds(): string[] {
+        return [...agentInstances.keys()];
+    }
 
-        const existingPlayer = agentInstances.get(agent.id);
-        if (existingPlayer) {
-            return existingPlayer;
+    /**
+     * Creates or moves a mock agent sprite. Agents are laid out in a row to the right of the local player.
+     */
+    public static spawnOrUpdateAgent(scene: GameScene, agent: AIAgentConfig, slotIndex: number): RemotePlayer | null {
+        const { x, y } = computeSpawnPosition(scene, slotIndex);
+        const userId = agent.userId ?? -1;
+
+        const existing = agentInstances.get(agent.id);
+        if (existing) {
+            existing.setPosition(x, y);
+            existing.setDepth(y);
+            bindAgentClick(existing, agent.id);
+            return existing;
         }
 
         try {
-            const texturesPromise = lazyLoadPlayerCharacterTextures(
-                gameScene.superLoad,
-                AGENT_TEXTURES
-            );
+            const texturesPromise = lazyLoadPlayerCharacterTextures(scene.superLoad, AGENT_TEXTURES);
 
             const player = new RemotePlayer(
-                agent.userId ?? -1,
+                userId,
                 agent.id,
-                gameScene,
-                DEFAULT_X,
-                DEFAULT_Y,
+                scene,
+                x,
+                y,
                 agent.name,
                 texturesPromise,
                 DEFAULT_DIRECTION,
@@ -58,8 +88,11 @@ export class AIAgentSpawner {
                 undefined
             );
 
-            gameScene.MapPlayersByKey.set(agent.userId ?? -1, player);
+            (player as RemotePlayer & { isAIAgent?: boolean }).isAIAgent = true;
+            player.setDepth(y);
+            bindAgentClick(player, agent.id);
 
+            scene.MapPlayersByKey.set(userId, player);
             agentInstances.set(agent.id, player);
 
             return player;
@@ -70,22 +103,31 @@ export class AIAgentSpawner {
     }
 
     public static removeAgent(agentId: string): void {
-        const gameScene = get(gameSceneStore);
         const player = agentInstances.get(agentId);
-        if (player && gameScene) {
-            gameScene.MapPlayersByKey.delete(player.userId);
-            player.destroy();
-            agentInstances.delete(agentId);
+        if (!player) {
+            return;
         }
+        const pl = player as RemotePlayerWithAiHandler;
+        if (pl._aiAgentClickHandler) {
+            player.off(RemotePlayerEvent.Clicked, pl._aiAgentClickHandler);
+            pl._aiAgentClickHandler = undefined;
+        }
+        const gameScene = player.scene as GameScene;
+        gameScene.MapPlayersByKey.delete(player.userId);
+        player.destroy();
+        agentInstances.delete(agentId);
     }
 
     public static removeAllAgents(): void {
-        const gameScene = get(gameSceneStore);
-        for (const [agentId, player] of agentInstances) {
-            if (gameScene) {
-                gameScene.MapPlayersByKey.delete(player.userId);
-                player.destroy();
+        for (const [, player] of [...agentInstances]) {
+            const pl = player as RemotePlayerWithAiHandler;
+            if (pl._aiAgentClickHandler) {
+                player.off(RemotePlayerEvent.Clicked, pl._aiAgentClickHandler);
+                pl._aiAgentClickHandler = undefined;
             }
+            const gameScene = player.scene as GameScene;
+            gameScene.MapPlayersByKey.delete(player.userId);
+            player.destroy();
         }
         agentInstances.clear();
     }

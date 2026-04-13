@@ -29,6 +29,7 @@
     import { highlightFullScreen } from "../Stores/ActionsCamStore";
     import { chatVisibilityStore } from "../Stores/ChatStore";
     import { chatSidebarWidthStore } from "../Chat/ChatSidebarWidthStore";
+    import { agentsSidebarVisibleStore, agentsSidebarWidthStore } from "../Stores/AIAgentStore";
     import { EditorToolName } from "../Phaser/Game/MapEditor/MapEditorModeManager";
     import { streamableCollectionStore } from "../Stores/StreamableCollectionStore";
     import { inputFormFocusStore } from "../Stores/UserInputStore";
@@ -108,7 +109,9 @@
         inputFormFocusStore.set(false);
     });
 
-    $: marginLeft = $chatVisibilityStore ? $chatSidebarWidthStore : 0;
+    $: marginLeft =
+        ($chatVisibilityStore ? $chatSidebarWidthStore : 0) +
+        ($agentsSidebarVisibleStore ? $agentsSidebarWidthStore : 0);
     $: marginRight =
         $mapEditorVisibilityStore && $mapEditorSelectedToolStore !== EditorToolName.WAMSettingsEditor
             ? $mapEditorSideBarWidthStore

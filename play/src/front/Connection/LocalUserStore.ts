@@ -35,6 +35,8 @@ const cacheAPIIndex = "workavdenture-cache";
 const userProperties = "user-properties";
 const cameraPrivacySettings = "cameraPrivacySettings";
 const microphonePrivacySettings = "microphonePrivacySettings";
+const disableCameraKey = "disableCamera";
+const disableMicrophoneKey = "disableMicrophone";
 const emojiFavorite = "emojiFavorite";
 const speakerDeviceId = "speakerDeviceId";
 const ignoredNewMediaDeviceIdsKey = "ignoredNewMediaDeviceIds";
@@ -53,6 +55,8 @@ const ignoredSuggestedRoomIdsKey = "ignoredSuggestedRoomIds";
 const cameraContainerHeightKey = "cameraContainerHeight";
 const chatSideBarWidthKey = "chatSideBarWidth";
 const mapEditorSideBarWidthKey = "mapEditorSideBarWidthKey";
+const agentsSideBarWidthKey = "agentsSideBarWidth";
+const aiAgentFrameworkKey = "aiAgentFramework";
 const bubbleSound = "bubbleSound";
 const notAskAgainHelpWebRtcSettingsPopup = "notAskAgainHelpWebRtcSettingsPopup";
 const duplicateUserDontRemindKey = "workadventure_duplicate_user_dont_remind";
@@ -522,6 +526,28 @@ class LocalUserStore {
         return localStorage.getItem(microphonePrivacySettings) === "true";
     }
 
+    setDisableCamera(option: boolean) {
+        localStorage.setItem(disableCameraKey, option.toString());
+    }
+
+    getDisableCamera(): boolean {
+        if (localStorage.getItem(disableCameraKey) == null) {
+            localStorage.setItem(disableCameraKey, "false");
+        }
+        return localStorage.getItem(disableCameraKey) === "true";
+    }
+
+    setDisableMicrophone(option: boolean) {
+        localStorage.setItem(disableMicrophoneKey, option.toString());
+    }
+
+    getDisableMicrophone(): boolean {
+        if (localStorage.getItem(disableMicrophoneKey) == null) {
+            localStorage.setItem(disableMicrophoneKey, "false");
+        }
+        return localStorage.getItem(disableMicrophoneKey) === "true";
+    }
+
     getAllUserProperties(context: string): Map<string, PlayerVariable> {
         const now = new Date().getTime();
         const result = new Map<string, PlayerVariable>();
@@ -906,8 +932,34 @@ class LocalUserStore {
         return isNaN(floatValue) ? INITIAL_MAP_EDITOR_SIDEBAR_WIDTH : floatValue;
     }
 
+    setAgentsSideBarWidth(width: number): void {
+        localStorage.setItem(agentsSideBarWidthKey, width.toString());
+    }
+
+    getAgentsSideBarWidth(): number {
+        const value = localStorage.getItem(agentsSideBarWidthKey);
+        if (!value) {
+            return 335;
+        }
+        const floatValue = parseFloat(value);
+        return isNaN(floatValue) ? 335 : floatValue;
+    }
+
     setBubbleSound(value: "ding" | "wobble"): void {
         localStorage.setItem(bubbleSound, value);
+    }
+
+    setAIAgentFramework(framework: string): void {
+        localStorage.setItem(aiAgentFrameworkKey, framework);
+    }
+
+    getAIAgentFramework(): "openclaw" | "langchain" | "hermes" | "crewai" {
+        const value = localStorage.getItem(aiAgentFrameworkKey);
+        const valid: string[] = ["openclaw", "langchain", "hermes", "crewai"];
+        if (value && valid.includes(value)) {
+            return value as "openclaw" | "langchain" | "hermes" | "crewai";
+        }
+        return "openclaw";
     }
 
     getBubbleSound(): "ding" | "wobble" {

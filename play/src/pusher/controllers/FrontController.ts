@@ -19,6 +19,7 @@ import {
 } from "../enums/EnvironmentVariable";
 import { validateQuery } from "../services/QueryValidator";
 import { BaseHttpController } from "./BaseHttpController";
+import { resolvePlayHtmlTemplate } from "../services/resolvePlayStaticPath";
 
 const debug = Debug("pusher:requests");
 
@@ -30,27 +31,8 @@ export class FrontController extends BaseHttpController {
     constructor(protected app: Application) {
         super(app);
 
-        let indexPath: string;
-        if (fs.existsSync("dist/public/index.html")) {
-            // In prod mode
-            indexPath = "dist/public/index.html";
-        } else if (fs.existsSync("index.html")) {
-            // In dev mode
-            indexPath = "index.html";
-        } else {
-            throw new Error("Could not find index.html file");
-        }
-
-        let redirectToAdminPath: string;
-        if (fs.existsSync("dist/public/redirectToAdmin.html")) {
-            // In prod mode
-            redirectToAdminPath = "dist/public/redirectToAdmin.html";
-        } else if (fs.existsSync("redirectToAdmin.html")) {
-            // In dev mode
-            redirectToAdminPath = "redirectToAdmin.html";
-        } else {
-            throw new Error("Could not find redirectToAdmin.html file");
-        }
+        const indexPath = resolvePlayHtmlTemplate("index.html");
+        const redirectToAdminPath = resolvePlayHtmlTemplate("redirectToAdmin.html");
 
         this.indexFile = fs.readFileSync(indexPath, "utf8");
         this.redirectToAdminFile = fs.readFileSync(redirectToAdminPath, "utf8");

@@ -6,9 +6,19 @@
     import { selectedRoomStore } from "./Stores/SelectRoomStore";
     import Chat from "./Components/Chat.svelte";
     import { chatSidebarWidthStore, hideActionBarStoreBecauseOfChatBar } from "./ChatSidebarWidthStore";
+    import { onDestroy } from "svelte";
+    import { agentsSidebarVisibleStore } from "../Stores/AIAgentStore";
     import { IconX } from "@wa-icons";
 
     let container: HTMLElement;
+
+    onDestroy(
+        agentsSidebarVisibleStore.subscribe((visible) => {
+            if (visible) {
+                chatVisibilityStore.set(false);
+            }
+        })
+    );
 
     const gameScene = gameManager.getCurrentGameScene();
 
